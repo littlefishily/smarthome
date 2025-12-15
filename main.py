@@ -13,11 +13,15 @@ sys.path.insert(0, str(Path(__file__).parent))
 from app import create_app
 
 # Настройка логирования
+log_dir = Path(__file__).parent / 'logs'
+log_dir.mkdir(exist_ok=True)
+log_file = log_dir / 'controller.log'
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/var/log/smarthome/controller.log'),
+        logging.FileHandler(str(log_file)),
         logging.StreamHandler()
     ]
 )

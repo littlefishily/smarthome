@@ -3,6 +3,8 @@
 """
 import logging
 import json
+import os
+from pathlib import Path
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from app.config_manager import ConfigManager
@@ -23,9 +25,14 @@ class SmartHomeController:
     
     def __init__(self):
         """Инициализация контроллера"""
+        # Получить абсолютный путь к директории приложения
+        app_dir = Path(__file__).parent.absolute()
+        template_dir = app_dir / 'web' / 'templates'
+        static_dir = app_dir / 'web' / 'static'
+        
         self.app = Flask(__name__, 
-                        template_folder='app/web/templates',
-                        static_folder='app/web/static')
+                        template_folder=str(template_dir),
+                        static_folder=str(static_dir))
         CORS(self.app)
         
         # Менеджеры
