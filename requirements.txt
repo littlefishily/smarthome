@@ -1,0 +1,6 @@
+aiohttp>=3.8
+pyyaml>=6.0
+pymodbus>=2.5
+pyserial>=3.5
+asyncio-mqtt>=0.13
+ntplib>=0.4
