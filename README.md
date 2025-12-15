@@ -119,3 +119,16 @@ journalctl -u smarthome.service -f
 - Web-интерфейс по умолчанию не защищён; развёртывайте за доверенной сетью или проксируйте через TLS/аутентификацию для продакшена.
 - Команды `nmcli`, `netplan`, `timedatectl` выполняются с `sudo` и могут прервать удалённые сессии — применяйте изменения с локальным доступом или осторожно.
 
+## Управление Modbus slave-устройствами
+
+- UI: откройте `http://<device>:8080/ui/config` и перейдите к разделу "Slaves" — там можно просмотреть, добавить, редактировать, удалить и просканировать slave-устройства.
+- Автоскан: при желании можно включить автоскан при старте, отредактировав `config.yaml` (поля `slaves_autoscan_on_start`, `slaves_scan_start`, `slaves_scan_end`). По умолчанию автоскан выключён.
+- API endpoints:
+	- `GET /api/slaves` — получить список известных slave-устройств (JSON `{ok: true, slaves: [...]}`)
+	- `POST /api/slaves` — добавить slave (payload JSON: `{"unit":1,"name":"...","description":"..."}`)
+	- `PUT /api/slaves/{unit}` — обновить имя/описание slave (payload JSON: `{"name":"...","description":"..."}`)
+	- `DELETE /api/slaves/{unit}` — удалить slave
+	- `POST /api/slaves/scan` — запустить сканирование диапазона Modbus unit-ов и добавить обнаруженные в `config.yaml` (payload JSON optional: `{"start":1,"end":32}`)
+
+Примечание: сканирование посылает запрос чтения регистра к каждому unit в диапазоне; убедитесь, что подключённые устройства корректно обрабатывают такие запросы.
+

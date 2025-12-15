@@ -32,6 +32,11 @@ DEFAULT_CONFIG = {
     'slaves': [
         # Example slave entry: {'unit': 1, 'name': 'thermostat', 'description': 'Living room'}
     ]
+    ,
+    # optional autoscan behavior for Modbus RTU slaves
+    'slaves_autoscan_on_start': False,
+    'slaves_scan_start': 1,
+    'slaves_scan_end': 32
 }
 
 class Config:
