@@ -38,6 +38,17 @@ async def main():
 
 	# web app
 	app = create_app(cfg, rtu)
+
+	# optional autoscan for slaves on startup
+	try:
+		if cfg.data.get('slaves_autoscan_on_start'):
+			start = int(cfg.data.get('slaves_scan_start', 1))
+			end = int(cfg.data.get('slaves_scan_end', 32))
+			print(f'Autoscan slaves on startup: scanning {start}-{end}...')
+			found = app['slaves'].scan(rtu, start=start, end=end)
+			print('Autoscan found units:', found)
+	except Exception as e:
+		print('Autoscan failed:', e)
 	runner = web.AppRunner(app)
 	await runner.setup()
 	site = web.TCPSite(runner, '0.0.0.0', 8080)
