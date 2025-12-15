@@ -47,7 +47,22 @@ async def ui_config_page(request):
       <pre id='modbus_msg'></pre>
     </form>
 
-    <script>
+        <h3>Slaves</h3>
+        <div id='slaves_section'>
+            <button type='button' onclick='loadSlaves()'>Refresh Slaves</button>
+            <button type='button' onclick='scanSlaves()'>Scan for Slaves</button>
+            <div id='slaves_list'></div>
+            <h4>Add Slave</h4>
+            <form id='add_slave'>
+                <label>Unit ID: <input id='slave_unit' name='slave_unit' type='number' min='1' max='247'></label>
+                <label>Name: <input id='slave_name' name='slave_name'></label>
+                <label>Description: <input id='slave_desc' name='slave_desc'></label>
+                <button type='button' onclick='addSlave()'>Add</button>
+                <pre id='slave_msg'></pre>
+            </form>
+        </div>
+
+        <script>
     function show(id,msg){document.getElementById(id).innerText=msg}
     async function load(){
       let r=await fetch('/api/config'); let j=await r.json();
@@ -85,7 +100,49 @@ async def ui_config_page(request):
       let t=await r.text(); show('modbus_msg', t);
     }
 
-    load();
+        async function loadSlaves(){
+            let r = await fetch('/api/slaves');
+            let j = await r.json();
+            const out = document.getElementById('slaves_list');
+            if(!j.ok){ out.innerText = 'Error: '+JSON.stringify(j); return }
+            if(!j.slaves || j.slaves.length===0){ out.innerText = 'No slaves defined'; return }
+            let html = '<table border="1"><tr><th>Unit</th><th>Name</th><th>Description</th><th>Actions</th></tr>';
+            j.slaves.forEach(s=>{
+                html += `<tr><td>${s.unit}</td><td><input id='name_${s.unit}' value='${s.name||''}'></td><td><input id='desc_${s.unit}' value='${s.description||''}'></td><td><button onclick='updateSlave(${s.unit})'>Save</button> <button onclick='deleteSlave(${s.unit})'>Delete</button></td></tr>`;
+            });
+            html += '</table>';
+            out.innerHTML = html;
+        }
+
+        async function addSlave(){
+            const unit = parseInt(document.getElementById('slave_unit').value||0);
+            const name = document.getElementById('slave_name').value;
+            const desc = document.getElementById('slave_desc').value;
+            if(!unit){ show('slave_msg','Unit required'); return }
+            let r = await fetch('/api/slaves', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({unit, name, description: desc})});
+            let j = await r.json(); show('slave_msg', JSON.stringify(j)); loadSlaves();
+        }
+
+        async function updateSlave(unit){
+            const name = document.getElementById('name_'+unit).value;
+            const desc = document.getElementById('desc_'+unit).value;
+            let r = await fetch('/api/slaves/'+unit, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, description: desc})});
+            let j = await r.json(); alert(JSON.stringify(j)); loadSlaves();
+        }
+
+        async function deleteSlave(unit){
+            if(!confirm('Delete slave '+unit+'?')) return;
+            let r = await fetch('/api/slaves/'+unit, {method:'DELETE'});
+            let j = await r.json(); alert(JSON.stringify(j)); loadSlaves();
+        }
+
+        async function scanSlaves(){
+            show('slave_msg','Scanning...');
+            let r = await fetch('/api/slaves/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({start:1,end:32})});
+            let j = await r.json(); show('slave_msg', JSON.stringify(j,null,2)); loadSlaves();
+        }
+
+        load();
     </script>
     </body></html>
     """
@@ -102,6 +159,7 @@ def create_app(config, rtu_manager):
         web.get('/', index),
         web.get('/ui/config', ui_config_page),
         web.get('/api/slaves', api_list_slaves),
+        web.post('/api/slaves/scan', api_scan_slaves),
         web.post('/api/slaves', api_add_slave),
         web.put('/api/slaves/{unit}', api_update_slave),
         web.delete('/api/slaves/{unit}', api_delete_slave),
@@ -186,6 +244,23 @@ async def api_delete_slave(request):
             return web.json_response({'ok': False, 'error': 'not_found'}, status=404)
     except Exception as e:
         return web.json_response({'ok': False, 'error': str(e)}, status=400)
+
+
+async def api_scan_slaves(request):
+    data = {}
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    start = int(data.get('start', 1))
+    end = int(data.get('end', 32))
+    mgr: SlaveManager = request.app['slaves']
+    rtu = request.app['rtu']
+    try:
+        found = mgr.scan(rtu, start=start, end=end)
+        return web.json_response({'ok': True, 'found': found})
+    except Exception as e:
+        return web.json_response({'ok': False, 'error': str(e)}, status=500)
 
 
 def _netmask_to_prefix(netmask: str) -> int:

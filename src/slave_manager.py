@@ -47,3 +47,21 @@ class SlaveManager:
                 self.config.save()
                 return True
         return False
+
+    def scan(self, rtu_manager, start: int = 1, end: int = 32, probe_address: int = 0):
+        """Scan for active Modbus units by probing a register. Returns list of discovered unit ints."""
+        found = []
+        for unit in range(start, end + 1):
+            try:
+                # try reading one holding register at probe_address
+                regs = rtu_manager.read_holding_registers(unit, probe_address, 1)
+                # if we get a response (list/tuple), consider device present
+                if regs is not None:
+                    if not self.get_slave(unit):
+                        # add with a generic name
+                        self.add_slave({'unit': unit, 'name': f'slave-{unit}', 'description': ''})
+                    found.append(unit)
+            except Exception:
+                # no response or error — ignore
+                continue
+        return found
