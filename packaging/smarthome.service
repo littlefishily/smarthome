@@ -1,0 +1,14 @@
+[Unit]
+Description=SmartHome Controller
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/smarthome
+ExecStart=/opt/smarthome/venv/bin/python /opt/smarthome/src/main.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
