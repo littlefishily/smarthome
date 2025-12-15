@@ -28,6 +28,10 @@ DEFAULT_CONFIG = {
     'ntp': {
         'servers': ['pool.ntp.org']
     }
+    ,
+    'slaves': [
+        # Example slave entry: {'unit': 1, 'name': 'thermostat', 'description': 'Living room'}
+    ]
 }
 
 class Config:

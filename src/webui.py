@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from . import ntp_sync
+from .slave_manager import SlaveManager
 
 
 async def index(request):
@@ -95,9 +96,15 @@ def create_app(config, rtu_manager):
     app = web.Application()
     app['config'] = config
     app['rtu'] = rtu_manager
+    # Slave manager backed by config
+    app['slaves'] = SlaveManager(config)
     app.add_routes([
         web.get('/', index),
         web.get('/ui/config', ui_config_page),
+        web.get('/api/slaves', api_list_slaves),
+        web.post('/api/slaves', api_add_slave),
+        web.put('/api/slaves/{unit}', api_update_slave),
+        web.delete('/api/slaves/{unit}', api_delete_slave),
         web.get('/api/config', api_get_config),
         web.post('/api/config', api_post_config),
         web.post('/api/modbus/read', api_modbus_read),
@@ -138,6 +145,47 @@ async def api_modbus_read(request):
         return web.json_response({'ok': True, 'registers': regs})
     except Exception as e:
         return web.json_response({'ok': False, 'error': str(e)})
+
+
+async def api_list_slaves(request):
+    mgr: SlaveManager = request.app['slaves']
+    return web.json_response({'ok': True, 'slaves': mgr.list_slaves()})
+
+
+async def api_add_slave(request):
+    data = await request.json()
+    mgr: SlaveManager = request.app['slaves']
+    try:
+        entry = mgr.add_slave(data)
+        return web.json_response({'ok': True, 'slave': entry})
+    except Exception as e:
+        return web.json_response({'ok': False, 'error': str(e)}, status=400)
+
+
+async def api_update_slave(request):
+    unit = request.match_info.get('unit')
+    data = await request.json()
+    mgr: SlaveManager = request.app['slaves']
+    try:
+        entry = mgr.update_slave(int(unit), data)
+        return web.json_response({'ok': True, 'slave': entry})
+    except KeyError as e:
+        return web.json_response({'ok': False, 'error': str(e)}, status=404)
+    except Exception as e:
+        return web.json_response({'ok': False, 'error': str(e)}, status=400)
+
+
+async def api_delete_slave(request):
+    unit = request.match_info.get('unit')
+    mgr: SlaveManager = request.app['slaves']
+    try:
+        ok = mgr.remove_slave(int(unit))
+        if ok:
+            return web.json_response({'ok': True})
+        else:
+            return web.json_response({'ok': False, 'error': 'not_found'}, status=404)
+    except Exception as e:
+        return web.json_response({'ok': False, 'error': str(e)}, status=400)
 
 
 def _netmask_to_prefix(netmask: str) -> int:
