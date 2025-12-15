@@ -1,4 +1,17 @@
-from pymodbus.client.sync import ModbusSerialClient as ModbusClient
+# Support multiple pymodbus versions: try common import locations
+try:
+    from pymodbus.client.sync import ModbusSerialClient as ModbusClient
+except Exception:
+    try:
+        from pymodbus.client import ModbusSerialClient as ModbusClient
+    except Exception:
+        try:
+            from pymodbus.client.serial import ModbusSerialClient as ModbusClient
+        except Exception:
+            ModbusClient = None
+
+if ModbusClient is None:
+    raise ImportError("pymodbus ModbusSerialClient not found. Install 'pymodbus' (v2.x) or adjust imports.")
 
 class ModbusRTUManager:
     def __init__(self, port='/dev/ttyUSB0', baudrate=19200, parity='N', stopbits=1, timeout=2):
