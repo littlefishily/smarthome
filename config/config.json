@@ -1,0 +1,47 @@
+{
+  "network": {
+    "hostname": "smarthome-controller",
+    "ip_mode": "dhcp",
+    "ip_address": "192.168.1.100",
+    "netmask": "255.255.255.0",
+    "gateway": "192.168.1.1",
+    "dns": [
+      "8.8.8.8",
+      "8.8.4.4"
+    ]
+  },
+  "modbus_tcp": {
+    "enabled": true,
+    "host": "0.0.0.0",
+    "port": 5020,
+    "max_connections": 10
+  },
+  "modbus_rtu": {
+    "enabled": true,
+    "port": "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "timeout": 1,
+    "auto_reconnect": true,
+    "reconnect_interval": 5
+  },
+  "devices": [
+    {
+      "id": 1,
+      "name": "Temperature Sensor",
+      "type": "rtu",
+      "slave_id": 1,
+      "registers": [
+        {
+          "name": "temperature",
+          "address": 0,
+          "type": "holding_register",
+          "scale": 0.1
+        }
+      ]
+    }
+  ],
+  "logging": {
+    "level": "INFO",
+    "file": "/var/log/smarthome/controller.log"
+  }
+}

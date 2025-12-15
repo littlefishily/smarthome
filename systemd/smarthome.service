@@ -1,0 +1,19 @@
+[Unit]
+Description=Smart Home Controller
+After=network.target
+
+[Service]
+Type=simple
+User=smarthome
+WorkingDirectory=/opt/smarthome
+ExecStart=/usr/bin/python3 /opt/smarthome/main.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment="APP_HOST=0.0.0.0"
+Environment="APP_PORT=8000"
+Environment="FLASK_DEBUG=false"
+
+[Install]
+WantedBy=multi-user.target

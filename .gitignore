@@ -1,0 +1,57 @@
+# .gitignore для Smart Home Controller
+
+# Окружение
+venv/
+env/
+ENV/
+.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Логи и базы данных
+*.log
+logs/
+*.db
+*.sqlite
+
+# Конфигурации (локальные версии)
+config/config.local.json
+
+# Временные файлы
+*.tmp
+*.temp
+*.bak
+
+# Docker
+.dockerignore
+
+# Статические файлы
+app/web/static/node_modules/
+app/web/static/dist/
+
+# Переменные окружения
+.env
+.env.local
+.env.*.local

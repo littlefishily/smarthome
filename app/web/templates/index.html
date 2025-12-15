@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контроллер Умного Дома</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏠 Контроллер Умного Дома</h1>
+            <div class="status-bar">
+                <div id="rtu-status" class="status-item">RTU: <span class="badge offline">Отключено</span></div>
+                <div id="tcp-status" class="status-item">TCP: <span class="badge offline">Остановлено</span></div>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-button active" onclick="switchTab('network')">Сеть</button>
+            <button class="tab-button" onclick="switchTab('modbus-rtu')">Modbus RTU</button>
+            <button class="tab-button" onclick="switchTab('modbus-tcp')">Modbus TCP</button>
+            <button class="tab-button" onclick="switchTab('config')">Конфигурация</button>
+        </nav>
+
+        <!-- Вкладка Сеть -->
+        <section id="network" class="tab-content active">
+            <h2>Сетевые Настройки</h2>
+            
+            <div class="form-group">
+                <label>Имя хоста:</label>
+                <div class="input-group">
+                    <input type="text" id="hostname-input" placeholder="Введите имя хоста">
+                    <button onclick="setHostname()" class="btn btn-primary">Установить</button>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h3>Текущая конфигурация</h3>
+                <div id="network-info"></div>
+            </div>
+
+            <button onclick="refreshNetworkConfig()" class="btn btn-secondary">Обновить</button>
+        </section>
+
+        <!-- Вкладка Modbus RTU -->
+        <section id="modbus-rtu" class="tab-content">
+            <h2>Modbus RTU</h2>
+            
+            <div class="control-panel">
+                <div class="form-group">
+                    <label>Порт (например /dev/ttyUSB0):</label>
+                    <input type="text" id="rtu-port" value="/dev/ttyUSB0" placeholder="/dev/ttyUSB0">
+                </div>
+
+                <div class="form-group">
+                    <label>Скорость передачи (бод):</label>
+                    <select id="rtu-baudrate">
+                        <option value="9600">9600</option>
+                        <option value="19200">19200</option>
+                        <option value="38400">38400</option>
+                        <option value="57600">57600</option>
+                        <option value="115200">115200</option>
+                    </select>
+                </div>
+
+                <div class="button-group">
+                    <button onclick="connectRTU()" class="btn btn-success">Подключиться</button>
+                    <button onclick="disconnectRTU()" class="btn btn-danger">Отключиться</button>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h3>Чтение данных</h3>
+                <div class="form-group">
+                    <label>ID Slave:</label>
+                    <input type="number" id="rtu-read-slave" value="1" min="1" max="247">
+                </div>
+
+                <div class="form-group">
+                    <label>Тип чтения:</label>
+                    <select id="rtu-read-type">
+                        <option value="coils">Катушки (Coils)</option>
+                        <option value="discrete_inputs">Дискретные входы</option>
+                        <option value="holding_registers">Регистры удержания</option>
+                        <option value="input_registers">Входные регистры</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Начальный адрес:</label>
+                    <input type="number" id="rtu-read-start" value="0" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label>Количество:</label>
+                    <input type="number" id="rtu-read-qty" value="10" min="1">
+                </div>
+
+                <button onclick="readRTU()" class="btn btn-primary">Прочитать</button>
+                <div id="rtu-read-result" class="result-panel"></div>
+            </div>
+
+            <div class="info-panel">
+                <h3>Запись данных</h3>
+                <div class="form-group">
+                    <label>ID Slave:</label>
+                    <input type="number" id="rtu-write-slave" value="1" min="1" max="247">
+                </div>
+
+                <div class="form-group">
+                    <label>Тип записи:</label>
+                    <select id="rtu-write-type">
+                        <option value="coil">Одна катушка</option>
+                        <option value="register">Один регистр</option>
+                        <option value="coils">Несколько катушек</option>
+                        <option value="registers">Несколько регистров</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Адрес:</label>
+                    <input type="number" id="rtu-write-addr" value="0" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label>Значение (JSON для массива):</label>
+                    <input type="text" id="rtu-write-value" value="1" placeholder="1 или [1, 0, 1]">
+                </div>
+
+                <button onclick="writeRTU()" class="btn btn-primary">Записать</button>
+                <div id="rtu-write-result" class="result-panel"></div>
+            </div>
+        </section>
+
+        <!-- Вкладка Modbus TCP -->
+        <section id="modbus-tcp" class="tab-content">
+            <h2>Modbus TCP Сервер</h2>
+            
+            <div class="control-panel">
+                <div class="form-group">
+                    <label>IP адрес (0.0.0.0 для всех интерфейсов):</label>
+                    <input type="text" id="tcp-host" value="0.0.0.0" placeholder="0.0.0.0">
+                </div>
+
+                <div class="form-group">
+                    <label>Порт:</label>
+                    <input type="number" id="tcp-port" value="5020" min="1024" max="65535">
+                </div>
+
+                <div class="button-group">
+                    <button onclick="startTCPServer()" class="btn btn-success">Запустить</button>
+                    <button onclick="stopTCPServer()" class="btn btn-danger">Остановить</button>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h3>Статус сервера</h3>
+                <div id="tcp-status-info"></div>
+                <button onclick="refreshTCPStatus()" class="btn btn-secondary">Обновить</button>
+            </div>
+        </section>
+
+        <!-- Вкладка Конфигурация -->
+        <section id="config" class="tab-content">
+            <h2>Конфигурация</h2>
+            
+            <button onclick="saveConfig()" class="btn btn-success">Сохранить конфигурацию</button>
+            <button onclick="loadConfig()" class="btn btn-secondary">Загрузить конфигурацию</button>
+            
+            <textarea id="config-editor" class="config-editor"></textarea>
+        </section>
+    </div>
+
+    <footer>
+        <p>Контроллер Умного Дома v1.0 | Ubuntu</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

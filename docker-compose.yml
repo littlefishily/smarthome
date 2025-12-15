@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  smarthome:
+    build: .
+    container_name: smarthome-controller
+    restart: unless-stopped
+    ports:
+      - "8000:8000"      # Web UI
+      - "5020:5020"      # Modbus TCP
+    volumes:
+      - ./config:/etc/smarthome
+      - ./logs:/var/log/smarthome
+      - /dev:/dev        # Для доступа к последовательным портам
+    environment:
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+      - FLASK_DEBUG=false
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0  # Последовательный порт (если есть)
+    privileged: true    # Для доступа к последовательным портам
+    networks:
+      - smarthome-net
+    labels:
+      - "com.example.description=Smart Home Controller"
+
+networks:
+  smarthome-net:
+    driver: bridge
