@@ -4,10 +4,10 @@ Modbus TCP Server - предоставление доступа к RTU устр�
 import logging
 from typing import Dict, Any
 from pymodbus.datastore import ModbusSequentialDataBlock, ModbusSlaveContext, ModbusServerContext
-from pymodbus.server import StartAsyncTcpServer
-from pymodbus.device import ModbusDeviceIdentification, ModbusBasicQuery
+from pymodbus.device import ModbusDeviceIdentification
 import asyncio
 import threading
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -44,18 +44,16 @@ class ModbusTCPServer:
             
             # Информация об устройстве
             identity = ModbusDeviceIdentification(
-                info_name='Smart Home Controller',
-                info_code=0x01,
-                info_text='Modbus TCP Gateway for RTU Devices',
-                vendor_name='SmartHome',
-                product_code='SH-CTRL-001',
-                vendor_url='http://localhost:8000',
-                product_name='Smart Home Controller',
-                model_name='v1.0',
-                major_min_ver=1,
-                minor_min_ver=0,
-                major_maj_ver=1,
-                minor_maj_ver=0
+                info={
+                    0x00: 'Smart Home Controller',
+                    0x01: 0x01,
+                    0x02: 'Modbus TCP Gateway for RTU Devices',
+                    0x03: 'SmartHome',
+                    0x04: 'SH-CTRL-001',
+                    0x05: 'http://localhost:8000',
+                    0x06: 'Smart Home Controller',
+                    0x07: 'v1.0',
+                }
             )
             
             # Запуск сервера в отдельном потоке
@@ -66,6 +64,7 @@ class ModbusTCPServer:
             )
             self.server_thread.start()
             self.running = True
+            time.sleep(0.5)  # Даем серверу время на запуск
             logger.info(f"Started Modbus TCP Server on {self.host}:{self.port}")
             return True
             
@@ -76,20 +75,35 @@ class ModbusTCPServer:
     def _run_server(self, context, identity):
         """Запуск сервера"""
         try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            # Использовать правильный импорт для версии pymodbus
+            try:
+                from pymodbus.server.async_io import StartAsyncTcpServer as AsyncServer
+            except ImportError:
+                # Fallback для старых версий
+                from pymodbus.server import StartAsyncTcpServer as AsyncServer
             
-            # Запуск асинхронного сервера
-            loop.run_until_complete(
-                StartAsyncTcpServer(
+            async def run_async_server():
+                await AsyncServer(
                     context=context,
                     identity=identity,
                     address=(self.host, self.port),
                     allow_reuse_address=True
                 )
-            )
+            
+            # Попытка запустить с asyncio.run
+            try:
+                asyncio.run(run_async_server())
+            except RuntimeError as e:
+                # Если есть проблема с event loop, используем альтернативный способ
+                if "asyncio.run() cannot be called from a running event loop" in str(e):
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(run_async_server())
+                else:
+                    raise
         except Exception as e:
             logger.error(f"Server error: {e}")
+            self.running = False
     
     def stop(self):
         """Остановка TCP сервера"""
