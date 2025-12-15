@@ -26,7 +26,11 @@ pip install -r requirements.txt
 3. Запустите контроллер:
 
 ```bash
-python3 src/main.py
+# Recommended (runs module as package):
+python3 -m src.main
+
+# Or use the provided launcher from repository root:
+python3 smarthome.py
 ```
 
 По умолчанию веб-интерфейс доступен на `http://0.0.0.0:8080`.
