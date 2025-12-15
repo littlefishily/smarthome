@@ -77,3 +77,45 @@ sudo systemctl enable --now smarthome.service
 
 ## Вклад
 - Pull requests и issues приветствуются.
+
+## Установка и использование (быстрая инструкция)
+
+- **Автоматический установщик (Ubuntu, рекомендуемый)**
+	- В репозитории есть скрипт `packaging/install.sh`, который копирует проект в `/opt/smarthome`, создаёт виртуальное окружение, устанавливает зависимости и разворачивает systemd unit.
+	- Запуск (в каталоге репозитория):
+
+```bash
+sudo packaging/install.sh
+```
+
+- **Ручная установка (для разработчиков / тестирования)**
+	- Создайте venv, установите зависимости и запустите сервис вручную:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+python3 src/main.py
+```
+
+- **Systemd (пример)** — если вы используете автоматический инсталлятор, unit уже будет установлен и включён. Иначе создайте `/etc/systemd/system/smarthome.service` как в разделе "Systemd unit (пример)" выше и выполните:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now smarthome.service
+```
+
+- **Настройка**: отредактируйте `config.yaml` в `/opt/smarthome` (если использовали инсталлятор) или в корне репозитория при ручном запуске. Файл создаётся при первом запуске с значениями по умолчанию.
+
+- **Проверка статуса**:
+
+```bash
+sudo systemctl status smarthome.service
+journalctl -u smarthome.service -f
+```
+
+## Примечания по безопасности и эксплуатация
+- Web-интерфейс по умолчанию не защищён; развёртывайте за доверенной сетью или проксируйте через TLS/аутентификацию для продакшена.
+- Команды `nmcli`, `netplan`, `timedatectl` выполняются с `sudo` и могут прервать удалённые сессии — применяйте изменения с локальным доступом или осторожно.
+
